@@ -2,6 +2,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 
@@ -11,6 +12,7 @@ public class Servidor {
     public ServerSocket server;
     public Socket socket;
 
+    private ObjectOutputStream output;
     private ObjectInputStream input;
 
     public Socket connectar() {
@@ -18,6 +20,9 @@ public class Servidor {
             server = new ServerSocket(PORT);
 
             socket = server.accept();
+            output = new ObjectOutputStream(socket.getOutputStream());
+            input = new ObjectInputStream(socket.getInputStream());
+        
 
             return socket;
         } catch (Exception e) {
@@ -29,27 +34,38 @@ public class Servidor {
     public void tancarConnexio(Socket socket) {
         try {
             socket.close();
+            server.close();
+            output.close();
+            input.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
     public void enviarFitxers() {
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
-            String nom = reader.readLine();
-            
+       
+        String nom;
+        try {
+            nom = input.readObject().toString();
             Fitxer fitxer = new Fitxer(nom);
-            
-            
-            
-            
-            reader.close();
-        } catch (IOException e) {
+            output.writeObject(fitxer.getContingut());
+        } catch (ClassNotFoundException | IOException e) {
             e.printStackTrace();
         }
+            
+        
+            
+            
+            
+            
+
+       
     }
 
     public static void main(String[] args) {
-        
+        Servidor servidor = new Servidor();
+        servidor.connectar();
+        servidor.enviarFitxers();
+        servidor.tancarConnexio(servidor.socket);
     }
 }
